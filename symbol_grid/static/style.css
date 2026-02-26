@@ -298,6 +298,25 @@ h2 {
     margin: 2rem auto;
     padding: 0 1rem;
     page-break-before: always;
+    display: none;
+}
+
+.answer-key.visible {
+    display: block;
+}
+
+.show-answers-btn {
+    padding: 0.4rem 1rem;
+    background: #fff;
+    color: #36c;
+    border: 1px solid #36c;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.show-answers-btn:hover {
+    background: #eef;
 }
 
 .answer-key h2 {
@@ -425,6 +444,7 @@ h2 {
     }
 
     .answer-key {
+        display: block;
         page-break-before: always;
     }
 
