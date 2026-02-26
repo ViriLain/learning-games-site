@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% block title %}Symbol Grid Puzzle — Worksheet{% endblock %}
+
+{% block content %}
+<div class="controls-bar no-print">
+    <a href="/" class="back-link">&larr; New Puzzles</a>
+    <button onclick="window.print()" class="print-btn">Print</button>
+</div>
+
+<div class="worksheet count-{{ count }}">
+    {% for item in puzzle_data %}
+    {% set puzzle = item.puzzle %}
+    {% set hints = item.hints %}
+    <div class="puzzle-block">
+        <div class="puzzle-header">
+            <span class="puzzle-number">Puzzle {{ loop.index }}</span>
+        </div>
+
+        <div class="legend">
+            {% for i in range(puzzle.num_symbols) %}
+            <span class="legend-item">
+                <span class="symbol" style="color: {{ item.colors[i] }}">{{ item.symbols[i] }}</span>
+                = ____
+            </span>
+            {% endfor %}
+            <span class="value-range">Values: {{ puzzle.value_min }}–{{ puzzle.value_max }}</span>
+        </div>
+
+        <table class="grid">
+            {% for r in range(puzzle.grid_size) %}
+            <tr>
+                {% for c in range(puzzle.grid_size) %}
+                {% set sym_idx = puzzle.grid[r][c] %}
+                <td class="cell">
+                    <span class="symbol" style="color: {{ item.colors[sym_idx] }}">{{ item.symbols[sym_idx] }}</span>
+                </td>
+                {% endfor %}
+                <td class="hint row-hint">
+                    {% if r in hints.row %}{{ hints.row[r] }}{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            <tr class="col-hint-row">
+                {% for c in range(puzzle.grid_size) %}
+                <td class="hint col-hint">
+                    {% if c in hints.col %}{{ hints.col[c] }}{% endif %}
+                </td>
+                {% endfor %}
+                <td></td>
+            </tr>
+        </table>
+    </div>
+    {% endfor %}
+</div>
+
+{% if show_answers %}
+<div class="answer-key">
+    <h2>Answer Key</h2>
+    {% for item in puzzle_data %}
+    {% set puzzle = item.puzzle %}
+    <div class="answer-block">
+        <strong>Puzzle {{ loop.index }}:</strong>
+        {% for i in range(puzzle.num_symbols) %}
+        <span class="answer-item">
+            <span class="symbol" style="color: {{ item.colors[i] }}">{{ item.symbols[i] }}</span>
+            = {{ puzzle.symbol_values[i] }}
+        </span>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

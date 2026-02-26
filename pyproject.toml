@@ -1,0 +1,14 @@
+[project]
+name = "symbol-grid"
+version = "0.1.0"
+description = "Printable symbol grid puzzle worksheet generator"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.0",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]

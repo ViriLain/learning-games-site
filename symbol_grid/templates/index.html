@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+
+{% block title %}Symbol Grid Puzzle — Generator{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Symbol Grid Puzzle</h1>
+    <p class="subtitle">Generate printable puzzle worksheets</p>
+
+    {% if error %}
+    <div class="error-box">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/generate">
+        <section class="preset-section">
+            <h2>Difficulty</h2>
+            <div class="preset-buttons">
+                {% for name in preset_order %}
+                <button type="submit" name="preset" value="{{ name }}" class="preset-btn">
+                    <strong>{{ name }}</strong>
+                    <span>{{ preset_descriptions[name] }}</span>
+                </button>
+                {% endfor %}
+            </div>
+        </section>
+
+        <details class="custom-section">
+            <summary>Custom parameters</summary>
+            <div class="custom-fields">
+                <label>Grid size <input type="number" name="grid_size" min="2" max="8" value="4"></label>
+                <label>Symbols <input type="number" name="num_symbols" min="2" max="12" value="4"></label>
+                <label>Min value <input type="number" name="value_min" min="1" max="50" value="1"></label>
+                <label>Max value <input type="number" name="value_max" min="2" max="100" value="10"></label>
+                <label>Hint fraction <input type="number" name="hint_fraction" min="0" max="1" step="0.05" value="0.75"></label>
+                <label class="checkbox-label">
+                    <input type="checkbox" name="distinct_values" checked>
+                    Distinct values
+                </label>
+                <button type="submit" class="generate-btn">Generate Custom</button>
+            </div>
+        </details>
+
+        <section class="options-section">
+            <h2>Options</h2>
+            <div class="options-row">
+                <label>Puzzles per page
+                    <select name="count">
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                        <option value="4">4</option>
+                    </select>
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" name="show_answers" checked>
+                    Include answer key
+                </label>
+            </div>
+        </section>
+    </form>
+</div>
+{% endblock %}
