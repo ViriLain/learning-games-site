@@ -303,3 +303,18 @@ class TestGenerateKenKen:
         puzzle = generate_kenken(4, 2, ["+"])
         for cage in puzzle.cages:
             assert cage.operation in ("+", "")  # "" for single-cell
+
+
+from symbol_grid.kenken_config import KENKEN_PRESETS, KENKEN_PRESET_ORDER
+
+
+class TestKenKenConfig:
+    def test_all_presets_exist(self):
+        for name in KENKEN_PRESET_ORDER:
+            assert name in KENKEN_PRESETS
+
+    def test_preset_fields(self):
+        for preset in KENKEN_PRESETS.values():
+            assert 3 <= preset.grid_size <= 6
+            assert preset.max_cage_size >= 1
+            assert len(preset.operations) >= 1
