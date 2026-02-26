@@ -71,7 +71,10 @@ When evaluating code or next steps:
 
 ## Project
 
-Symbol Grid — a Flask web app that generates printable math puzzle worksheets. Players see a grid filled with symbols (★, ♦, ♠, etc.), each mapped to a hidden numeric value. Row/column sum hints let the player deduce each symbol's value.
+Puzzle Worksheets — a Flask web app that generates printable math puzzle worksheets. Two puzzle types:
+
+- **Symbol Grid**: Players see a grid of symbols (★, ♦, ♠, etc.), each mapped to a hidden numeric value. Row/column sum hints let the player deduce each symbol's value.
+- **KenKen**: Players fill an NxN grid with numbers 1..N (Latin square rules). Cages group adjacent cells with an arithmetic operation and target value as clues.
 
 ## Commands
 
@@ -84,7 +87,7 @@ pytest
 
 # Run a single test file or test
 pytest tests/test_puzzle.py
-pytest tests/test_puzzle.py::TestGeneratePuzzle::test_all_symbols_appear
+pytest tests/test_kenken_puzzle.py::TestGenerateKenKen::test_puzzle_is_uniquely_solvable
 
 # Install (editable dev install with test deps)
 pip install -e ".[dev]"
@@ -94,21 +97,50 @@ No formatter or linter is configured yet — flag this if making substantial cha
 
 ## Architecture
 
-The app has three layers, all under `symbol_grid/`:
+All code lives under `symbol_grid/` (the package name predates KenKen — rename when a third puzzle type arrives).
 
-- **`puzzle.py`** — Pure logic. `generate_puzzle()` builds a random grid, assigns symbol values, constructs a linear-algebra coefficient matrix (numpy), and greedily selects a solvable subset of row/column sum hints. Key invariant: the hint subset's coefficient matrix must have rank ≥ `num_symbols` so the puzzle is uniquely solvable. Retries up to `max_retries` times if the random grid doesn't produce full rank.
-- **`config.py`** — Constants: symbol characters, CSS colors, `DifficultyPreset` dataclass, and the four preset difficulties (Easy → Expert). Presets control grid size, symbol count, value range, hint fraction, and whether values must be distinct.
-- **`app.py`** — Flask routes. `GET /` renders the form (`index.html`); `POST /generate` parses form params (preset or custom), calls `generate_puzzle()`, and renders `worksheet.html`. Templates are Jinja2 in `symbol_grid/templates/`, one static CSS file in `symbol_grid/static/`.
+### Routing (`app.py`)
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/` | GET | Landing page — puzzle type picker |
+| `/symbol-grid` | GET | Symbol Grid form |
+| `/symbol-grid/generate` | POST | Generate Symbol Grid worksheet |
+| `/kenken` | GET | KenKen form |
+| `/kenken/generate` | POST | Generate KenKen worksheet |
+
+### Symbol Grid
+
+- **`puzzle.py`** — Pure logic. `generate_puzzle()` builds a random grid, assigns symbol values, constructs a coefficient matrix (numpy), and greedily selects a solvable subset of row/column sum hints. Key invariant: the hint subset's coefficient matrix must have rank ≥ `num_symbols`.
+- **`config.py`** — Symbol characters, CSS colors, `DifficultyPreset` dataclass, four presets (Easy → Expert).
+
+### KenKen
+
+- **`kenken_puzzle.py`** — Pure logic. `generate_kenken()` orchestrates: (1) generate a random Latin square, (2) partition into connected cages, (3) assign operations and compute targets, (4) validate uniqueness via backtracking solver. Retries if not uniquely solvable.
+- **`kenken_config.py`** — `KenKenPreset` dataclass, four presets controlling grid size (3-6), max cage size, and allowed operations.
+- **Solver**: constraint-propagation + backtracking. Pure Python, no numpy. Used for uniqueness validation during generation.
+
+### Templates & Static
+
+Jinja2 templates in `symbol_grid/templates/`, one CSS file in `symbol_grid/static/`. KenKen cage borders are rendered via CSS classes (`cage-top`, `cage-right`, etc.) computed server-side by `_build_cage_borders()`.
 
 ## Key Concepts
 
-- **Coefficient matrix**: a `(2 * grid_size) × num_symbols` matrix where each row is a row-sum or column-sum equation. Entry `(i, j)` = count of symbol `j` in row/column `i`. Full rank means the system of linear equations uniquely determines symbol values.
-- **`hint_fraction`**: controls difficulty. `1.0` = all hints shown, `0.0` = minimal (≈ `num_symbols`) hints. The greedy selector always ensures solvability.
-- **Puzzle counts**: 1, 2, or 4 puzzles per worksheet (enforced in `_parse_generate_params`).
+- **Coefficient matrix** (Symbol Grid): `(2 * grid_size) × num_symbols` matrix. Full rank = uniquely solvable.
+- **`hint_fraction`** (Symbol Grid): controls difficulty. `1.0` = all hints, `0.0` = minimal hints.
+- **Latin square** (KenKen): NxN grid where each row and column contains 1..N exactly once.
+- **Cage** (KenKen): connected group of cells with a target number and operation (+, −, ×, ÷). Single-cell cages show just the value. 3+ cell cages use only + or ×.
+- **Puzzle counts**: 1, 2, or 4 puzzles per worksheet (both puzzle types).
 
 ## Testing
 
-Tests use pytest with Flask's `test_client`. `test_puzzle.py` covers generation logic and the coefficient matrix. `test_app.py` covers routes, presets, custom params, and error handling. Tests are deterministic in assertion (random puzzles are validated structurally, not against fixed output).
+Tests use pytest with Flask's `test_client`. Test files:
+- `test_puzzle.py` — Symbol Grid generation logic and coefficient matrix
+- `test_app.py` — Landing page, Symbol Grid routes, presets, custom params, error handling
+- `test_kenken_puzzle.py` — Latin square, cage partitioning, operation assignment, solver, full generation, config
+- `test_kenken_app.py` — KenKen routes, presets, worksheet rendering
+
+Tests are deterministic in assertion (random puzzles are validated structurally, not against fixed output).
 
 ## Dependencies
 
