@@ -12,8 +12,17 @@ from symbol_grid.puzzle import Puzzle, generate_puzzle
 app = Flask(__name__)
 
 
+# --- Landing ---
+
 @app.route("/")
-def index():
+def landing():
+    return render_template("landing.html")
+
+
+# --- Symbol Grid ---
+
+@app.route("/symbol-grid")
+def symbol_grid_index():
     return render_template(
         "index.html",
         presets=PRESETS,
@@ -22,11 +31,8 @@ def index():
     )
 
 
-def _parse_generate_params(form: dict) -> tuple[dict, str | None]:
-    """Extract and validate puzzle params from form data.
-
-    Returns (params_dict, error_message). error_message is None on success.
-    """
+def _parse_symbol_grid_params(form: dict) -> tuple[dict, str | None]:
+    """Extract and validate Symbol Grid puzzle params from form data."""
     preset_name = form.get("preset")
     if preset_name and preset_name in PRESETS:
         p = PRESETS[preset_name]
@@ -75,9 +81,9 @@ def _build_hint_lookup(puzzle: Puzzle) -> dict:
     return {"row": row_hints, "col": col_hints}
 
 
-@app.route("/generate", methods=["POST"])
-def generate():
-    params, error = _parse_generate_params(request.form)
+@app.route("/symbol-grid/generate", methods=["POST"])
+def symbol_grid_generate():
+    params, error = _parse_symbol_grid_params(request.form)
     if error:
         return render_template(
             "index.html",
@@ -125,7 +131,7 @@ def generate():
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Symbol Grid Puzzle server")
+    parser = argparse.ArgumentParser(description="Puzzle Worksheet server")
     parser.add_argument("-p", "--port", type=int, default=8080)
     args = parser.parse_args()
     app.run(debug=True, port=args.port)

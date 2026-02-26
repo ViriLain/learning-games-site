@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block title %}Puzzle Worksheets{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Puzzle Worksheets</h1>
+    <p class="subtitle">Generate printable puzzle worksheets</p>
+
+    <div class="puzzle-picker">
+        <a href="/symbol-grid" class="puzzle-card">
+            <strong>Symbol Grid</strong>
+            <span>Decode symbol values from row and column sums</span>
+        </a>
+        <a href="/kenken" class="puzzle-card">
+            <strong>KenKen</strong>
+            <span>Fill the grid using arithmetic cage clues</span>
+        </a>
+    </div>
+</div>
+{% endblock %}
