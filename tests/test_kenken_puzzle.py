@@ -5,6 +5,8 @@ from symbol_grid.kenken_puzzle import (
     partition_into_cages,
     assign_cage_operations,
     solve_kenken,
+    generate_kenken,
+    KenKenGenerationError,
     Cage,
     KenKenPuzzle,
 )
@@ -236,3 +238,68 @@ class TestSolveKenKen:
         puzzle = KenKenPuzzle(size=size, solution=solution, cages=cages)
         solutions = solve_kenken(puzzle, max_solutions=2)
         assert len(solutions) == 1
+
+
+class TestGenerateKenKen:
+    @pytest.mark.parametrize("size,max_cage,ops", [
+        (3, 2, ["+"]),                         # Easy
+        (4, 3, ["+", "-"]),                     # Medium
+        (5, 4, ["+", "-", "×"]),                # Hard
+        (6, 4, ["+", "-", "×", "÷"]),           # Expert
+    ])
+    def test_generates_valid_puzzle(self, size, max_cage, ops):
+        puzzle = generate_kenken(size, max_cage, ops)
+        assert puzzle.size == size
+
+    def test_solution_is_latin_square(self):
+        puzzle = generate_kenken(4, 3, ["+", "-"])
+        expected = set(range(1, puzzle.size + 1))
+        for row in puzzle.solution:
+            assert set(row) == expected
+        for c in range(puzzle.size):
+            col = [puzzle.solution[r][c] for r in range(puzzle.size)]
+            assert set(col) == expected
+
+    def test_all_cells_in_exactly_one_cage(self):
+        puzzle = generate_kenken(4, 3, ["+"])
+        all_cells = set()
+        for cage in puzzle.cages:
+            for cell in cage.cells:
+                assert cell not in all_cells, f"Cell {cell} in multiple cages"
+                all_cells.add(cell)
+        expected = {(r, c) for r in range(puzzle.size) for c in range(puzzle.size)}
+        assert all_cells == expected
+
+    def test_cages_respect_max_size(self):
+        puzzle = generate_kenken(5, 3, ["+", "-", "×"])
+        for cage in puzzle.cages:
+            assert len(cage.cells) <= 3
+
+    def test_cage_targets_are_correct(self):
+        puzzle = generate_kenken(4, 3, ["+", "-", "×"])
+        for cage in puzzle.cages:
+            values = [puzzle.solution[r][c] for r, c in cage.cells]
+            if cage.operation == "":
+                assert cage.target == values[0]
+            elif cage.operation == "+":
+                assert cage.target == sum(values)
+            elif cage.operation == "×":
+                product = 1
+                for v in values:
+                    product *= v
+                assert cage.target == product
+            elif cage.operation == "-":
+                assert cage.target == abs(values[0] - values[1])
+            elif cage.operation == "÷":
+                big, small = max(values), min(values)
+                assert cage.target == big // small
+
+    def test_puzzle_is_uniquely_solvable(self):
+        puzzle = generate_kenken(4, 3, ["+", "-"])
+        solutions = solve_kenken(puzzle, max_solutions=2)
+        assert len(solutions) == 1
+
+    def test_only_allowed_operations_used(self):
+        puzzle = generate_kenken(4, 2, ["+"])
+        for cage in puzzle.cages:
+            assert cage.operation in ("+", "")  # "" for single-cell

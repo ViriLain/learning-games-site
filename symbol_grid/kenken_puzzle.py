@@ -286,3 +286,30 @@ def _try_operation(op: str, values: list[int]) -> int | None:
             return None
         return big // small
     return None
+
+
+def generate_kenken(
+    size: int,
+    max_cage_size: int,
+    allowed_operations: list[str],
+    max_retries: int = 50,
+) -> KenKenPuzzle:
+    """Generate a uniquely solvable KenKen puzzle."""
+    if size < 2 or size > 9:
+        raise ValueError("size must be between 2 and 9")
+    if max_cage_size < 1:
+        raise ValueError("max_cage_size must be >= 1")
+
+    for _ in range(max_retries):
+        solution = generate_latin_square(size)
+        cage_cells = partition_into_cages(size, max_cage_size)
+        cages = assign_cage_operations(solution, cage_cells, allowed_operations)
+        puzzle = KenKenPuzzle(size=size, solution=solution, cages=cages)
+
+        solutions = solve_kenken(puzzle, max_solutions=2)
+        if len(solutions) == 1:
+            return puzzle
+
+    raise KenKenGenerationError(
+        f"Failed to generate uniquely solvable KenKen after {max_retries} retries"
+    )
