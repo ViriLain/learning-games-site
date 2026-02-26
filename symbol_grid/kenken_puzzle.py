@@ -82,3 +82,44 @@ def _find_valid_row(
     if _bt(0):
         return result
     return None
+
+
+def partition_into_cages(
+    size: int, max_cage_size: int
+) -> list[list[tuple[int, int]]]:
+    """Partition an NxN grid into connected cages of random sizes."""
+    cells = [(r, c) for r in range(size) for c in range(size)]
+    random.shuffle(cells)
+
+    assigned: set[tuple[int, int]] = set()
+    cages: list[list[tuple[int, int]]] = []
+
+    for cell in cells:
+        if cell in assigned:
+            continue
+        # Grow a cage from this cell
+        cage_size = random.randint(1, max_cage_size)
+        cage = [cell]
+        assigned.add(cell)
+
+        while len(cage) < cage_size:
+            # Find unassigned neighbors of current cage
+            neighbors: set[tuple[int, int]] = set()
+            for r, c in cage:
+                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    nb = (r + dr, c + dc)
+                    if (
+                        0 <= nb[0] < size
+                        and 0 <= nb[1] < size
+                        and nb not in assigned
+                    ):
+                        neighbors.add(nb)
+            if not neighbors:
+                break
+            chosen = random.choice(list(neighbors))
+            cage.append(chosen)
+            assigned.add(chosen)
+
+        cages.append(cage)
+
+    return cages
