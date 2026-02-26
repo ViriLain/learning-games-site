@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+
+{% block title %}KenKen Puzzle — Worksheet{% endblock %}
+
+{% block content %}
+<div class="controls-bar no-print">
+    <a href="/kenken" class="back-link">&larr; New Puzzles</a>
+    <button onclick="window.print()" class="print-btn">Print</button>
+</div>
+
+<div class="worksheet count-{{ count }}">
+    {% for item in puzzle_data %}
+    {% set puzzle = item.puzzle %}
+    {% set borders = item.borders %}
+    {% set labels = item.labels %}
+    <div class="puzzle-block">
+        <div class="puzzle-header">
+            <span class="puzzle-number">Puzzle {{ loop.index }}</span>
+            <span class="puzzle-info">{{ puzzle.size }}×{{ puzzle.size }}</span>
+        </div>
+
+        <table class="kenken-grid">
+            {% for r in range(puzzle.size) %}
+            <tr>
+                {% for c in range(puzzle.size) %}
+                {% set border_set = borders[r][c] %}
+                <td class="kenken-cell{% if 'top' in border_set %} cage-top{% endif %}{% if 'right' in border_set %} cage-right{% endif %}{% if 'bottom' in border_set %} cage-bottom{% endif %}{% if 'left' in border_set %} cage-left{% endif %}">
+                    {% if (r, c) in labels %}
+                    <span class="cage-label">{{ labels[(r, c)] }}</span>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endfor %}
+</div>
+
+{% if show_answers %}
+<div class="answer-key">
+    <h2>Answer Key</h2>
+    {% for item in puzzle_data %}
+    {% set puzzle = item.puzzle %}
+    <div class="answer-block">
+        <strong>Puzzle {{ loop.index }}:</strong>
+        <table class="kenken-answer-grid">
+            {% for r in range(puzzle.size) %}
+            <tr>
+                {% for c in range(puzzle.size) %}
+                <td>{{ puzzle.solution[r][c] }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

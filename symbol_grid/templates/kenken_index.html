@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block title %}KenKen Puzzle — Generator{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>KenKen Puzzle</h1>
+    <p class="subtitle">Generate printable KenKen worksheets</p>
+
+    {% if error %}
+    <div class="error-box">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/kenken/generate">
+        <section class="preset-section">
+            <h2>Difficulty</h2>
+            <div class="preset-buttons">
+                {% for name in preset_order %}
+                <button type="submit" name="preset" value="{{ name }}" class="preset-btn">
+                    <strong>{{ name }}</strong>
+                    <span>{{ preset_descriptions[name] }}</span>
+                </button>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="options-section">
+            <h2>Options</h2>
+            <div class="options-row">
+                <label>Puzzles per page
+                    <select name="count">
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                        <option value="4">4</option>
+                    </select>
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" name="show_answers" checked>
+                    Include answer key
+                </label>
+            </div>
+        </section>
+    </form>
+</div>
+{% endblock %}
