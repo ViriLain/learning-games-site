@@ -123,3 +123,71 @@ def partition_into_cages(
         cages.append(cage)
 
     return cages
+
+
+def assign_cage_operations(
+    grid: list[list[int]],
+    cage_cells_list: list[list[tuple[int, int]]],
+    allowed_operations: list[str],
+) -> list[Cage]:
+    """Assign an operation and compute the target for each cage."""
+    cages = []
+    for cells in cage_cells_list:
+        values = [grid[r][c] for r, c in cells]
+
+        if len(cells) == 1:
+            cages.append(Cage(cells=tuple(cells), target=values[0], operation=""))
+            continue
+
+        operation, target = _pick_operation(values, cells, allowed_operations)
+        cages.append(Cage(cells=tuple(cells), target=target, operation=operation))
+
+    return cages
+
+
+def _pick_operation(
+    values: list[int],
+    cells: list[tuple[int, int]],
+    allowed_operations: list[str],
+) -> tuple[str, int]:
+    """Pick a valid operation for a cage and compute its target."""
+    # For 3+ cell cages, only + and × are valid
+    if len(values) > 2:
+        ops = [op for op in allowed_operations if op in ("+", "×")]
+        if not ops:
+            ops = ["+"]
+    else:
+        ops = list(allowed_operations)
+
+    random.shuffle(ops)
+
+    for op in ops:
+        result = _try_operation(op, values)
+        if result is not None:
+            return op, result
+
+    # Fallback: addition always works
+    return "+", sum(values)
+
+
+def _try_operation(op: str, values: list[int]) -> int | None:
+    """Try to apply an operation. Returns target or None if invalid."""
+    if op == "+":
+        return sum(values)
+    elif op == "×":
+        result = 1
+        for v in values:
+            result *= v
+        return result
+    elif op == "-":
+        if len(values) != 2:
+            return None
+        return abs(values[0] - values[1])
+    elif op == "÷":
+        if len(values) != 2:
+            return None
+        big, small = max(values), min(values)
+        if small == 0 or big % small != 0:
+            return None
+        return big // small
+    return None
