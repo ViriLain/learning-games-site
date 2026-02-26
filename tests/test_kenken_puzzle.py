@@ -4,7 +4,9 @@ from symbol_grid.kenken_puzzle import (
     generate_latin_square,
     partition_into_cages,
     assign_cage_operations,
+    solve_kenken,
     Cage,
+    KenKenPuzzle,
 )
 
 
@@ -141,3 +143,96 @@ class TestAssignCageOperations:
         cage_cells = [[(1, 0), (1, 1)]]
         cages = assign_cage_operations(grid, cage_cells, ["+"])
         assert set(cages[0].cells) == {(1, 0), (1, 1)}
+
+
+class TestSolveKenKen:
+    def test_solves_trivial_puzzle(self):
+        """A puzzle with all single-cell cages has exactly one solution."""
+        size = 3
+        solution = [
+            [1, 2, 3],
+            [2, 3, 1],
+            [3, 1, 2],
+        ]
+        cages = [
+            Cage(cells=((r, c),), target=solution[r][c], operation="")
+            for r in range(size)
+            for c in range(size)
+        ]
+        puzzle = KenKenPuzzle(size=size, solution=solution, cages=cages)
+        solutions = solve_kenken(puzzle, max_solutions=2)
+        assert len(solutions) == 1
+        assert solutions[0] == solution
+
+    def test_solves_addition_cages(self):
+        size = 3
+        solution = [
+            [1, 2, 3],
+            [2, 3, 1],
+            [3, 1, 2],
+        ]
+        cages = [
+            Cage(cells=((0, 0),), target=1, operation=""),
+            Cage(cells=((0, 1),), target=2, operation=""),
+            Cage(cells=((0, 2), (1, 2)), target=4, operation="+"),
+            Cage(cells=((1, 0), (2, 0)), target=5, operation="+"),
+            Cage(cells=((1, 1), (2, 1)), target=4, operation="+"),
+            Cage(cells=((2, 2),), target=2, operation=""),
+        ]
+        puzzle = KenKenPuzzle(size=size, solution=solution, cages=cages)
+        solutions = solve_kenken(puzzle, max_solutions=2)
+        assert len(solutions) == 1
+
+    def test_detects_multiple_solutions(self):
+        """A puzzle with ambiguous cages should return >1 solution."""
+        size = 2
+        # Two valid Latin squares for 2x2: [[1,2],[2,1]] and [[2,1],[1,2]]
+        # A cage covering all 4 cells with target 6, op + is ambiguous
+        cages = [
+            Cage(cells=((0, 0), (0, 1), (1, 0), (1, 1)), target=6, operation="+"),
+        ]
+        puzzle = KenKenPuzzle(size=size, solution=[[1, 2], [2, 1]], cages=cages)
+        solutions = solve_kenken(puzzle, max_solutions=5)
+        assert len(solutions) == 2
+
+    def test_solver_respects_subtraction(self):
+        size = 2
+        solution = [[1, 2], [2, 1]]
+        cages = [
+            Cage(cells=((0, 0), (0, 1)), target=1, operation="-"),
+            Cage(cells=((1, 0), (1, 1)), target=1, operation="-"),
+        ]
+        puzzle = KenKenPuzzle(size=size, solution=solution, cages=cages)
+        solutions = solve_kenken(puzzle, max_solutions=5)
+        # Both [[1,2],[2,1]] and [[2,1],[1,2]] satisfy the constraints
+        assert len(solutions) == 2
+
+    def test_solver_respects_division(self):
+        size = 2
+        solution = [[1, 2], [2, 1]]
+        cages = [
+            Cage(cells=((0, 0), (0, 1)), target=2, operation="÷"),
+            Cage(cells=((1, 0), (1, 1)), target=2, operation="÷"),
+        ]
+        puzzle = KenKenPuzzle(size=size, solution=solution, cages=cages)
+        solutions = solve_kenken(puzzle, max_solutions=5)
+        assert len(solutions) == 2
+
+    def test_solver_respects_multiplication(self):
+        size = 3
+        solution = [
+            [1, 2, 3],
+            [2, 3, 1],
+            [3, 1, 2],
+        ]
+        cages = [
+            Cage(cells=((0, 0),), target=1, operation=""),
+            Cage(cells=((0, 1),), target=2, operation=""),
+            Cage(cells=((0, 2), (1, 2)), target=3, operation="×"),
+            Cage(cells=((1, 0), (2, 0)), target=6, operation="×"),
+            Cage(cells=((1, 1), (2, 1)), target=3, operation="×"),
+            Cage(cells=((2, 2),), target=2, operation=""),
+        ]
+        puzzle = KenKenPuzzle(size=size, solution=solution, cages=cages)
+        solutions = solve_kenken(puzzle, max_solutions=2)
+        assert len(solutions) == 1

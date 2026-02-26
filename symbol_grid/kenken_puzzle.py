@@ -170,6 +170,101 @@ def _pick_operation(
     return "+", sum(values)
 
 
+def solve_kenken(puzzle: KenKenPuzzle, max_solutions: int = 2) -> list[list[list[int]]]:
+    """Solve a KenKen puzzle, returning up to max_solutions solutions.
+
+    Uses constraint propagation + backtracking. Returning 2+ means the
+    puzzle is not uniquely solvable.
+    """
+    size = puzzle.size
+    grid = [[0] * size for _ in range(size)]
+    solutions: list[list[list[int]]] = []
+
+    # Precompute which cage each cell belongs to
+    cell_to_cage: dict[tuple[int, int], Cage] = {}
+    for cage in puzzle.cages:
+        for cell in cage.cells:
+            cell_to_cage[cell] = cage
+
+    def _is_cage_satisfied(cage: Cage) -> bool:
+        """Check if a fully filled cage satisfies its constraint."""
+        values = [grid[r][c] for r, c in cage.cells]
+        if cage.operation == "":
+            return values[0] == cage.target
+        return _check_cage_constraint(cage.operation, cage.target, values)
+
+    def _is_cage_possible(cage: Cage) -> bool:
+        """Check if a partially filled cage can still be satisfied."""
+        values = [grid[r][c] for r, c in cage.cells]
+        filled = [v for v in values if v != 0]
+        unfilled_count = len(values) - len(filled)
+
+        if unfilled_count == 0:
+            return _is_cage_satisfied(cage)
+
+        # For partially filled cages, do lightweight pruning
+        if cage.operation == "+":
+            # Remaining sum must be achievable with unfilled_count values in [1..size]
+            remaining = cage.target - sum(filled)
+            return remaining >= unfilled_count and remaining <= unfilled_count * size
+        elif cage.operation == "×":
+            if 0 in filled:
+                return False
+            product_so_far = 1
+            for v in filled:
+                product_so_far *= v
+            if cage.target % product_so_far != 0:
+                return False
+            return True
+        # For - and ÷, only 2 cells, so if one is filled we can check feasibility
+        return True
+
+    def _solve(pos: int) -> None:
+        if len(solutions) >= max_solutions:
+            return
+        if pos == size * size:
+            solutions.append([row[:] for row in grid])
+            return
+
+        r, c = divmod(pos, size)
+        used_in_row = {grid[r][cc] for cc in range(size) if grid[r][cc] != 0}
+        used_in_col = {grid[rr][c] for rr in range(size) if grid[rr][c] != 0}
+
+        for v in range(1, size + 1):
+            if v in used_in_row or v in used_in_col:
+                continue
+            grid[r][c] = v
+
+            cage = cell_to_cage[(r, c)]
+            if _is_cage_possible(cage):
+                _solve(pos + 1)
+
+            if len(solutions) >= max_solutions:
+                grid[r][c] = 0
+                return
+            grid[r][c] = 0
+
+    _solve(0)
+    return solutions
+
+
+def _check_cage_constraint(operation: str, target: int, values: list[int]) -> bool:
+    """Check if values satisfy the cage constraint."""
+    if operation == "+":
+        return sum(values) == target
+    elif operation == "×":
+        product = 1
+        for v in values:
+            product *= v
+        return product == target
+    elif operation == "-":
+        return abs(values[0] - values[1]) == target
+    elif operation == "÷":
+        big, small = max(values), min(values)
+        return small != 0 and big % small == 0 and big // small == target
+    return False
+
+
 def _try_operation(op: str, values: list[int]) -> int | None:
     """Try to apply an operation. Returns target or None if invalid."""
     if op == "+":
